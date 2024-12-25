@@ -127,7 +127,8 @@ typedef int VastapiEnc2PassOnlyIssue(VASTAPIEncodeContext *ctx, VASTAPIEncodePic
 typedef int VastapiEnc1PassIssue(VASTAPIEncodeContext *ctx, VASTAPIEncodePicture *pic, void * pkt);
 typedef int VastapiEncGetEncoderOutput(VASTAPIEncodeContext *ctx, VASTAPIEncodePicture *pic, void *pkt);
 typedef int VastapiEncAllocOutputBuff(VASTAPIEncodeContext *ctx, VASTDisplay display, int is_av1, int width, int height, VASTBufferID *buf_id);
-
+typedef int VastapiEncCalTimeStampPar(VASTAPIEncodeContext *ctx, VASTAPIEncodePicture *pic, int64_t pkg_duration);
+typedef int64_t VastapiEncCalDurPar(VASTAPIEncodeContext *ctx, AVRational frame_time_base, int64_t frame_pts);
 
 
 //vastapi hwcontext api
@@ -197,6 +198,7 @@ typedef VASTStatus VastapiDestroyDmaHandle(VASTDisplay dpy, void *dma_handle);
 typedef VASTStatus VastapiDmaWriteBuf(VASTDisplay dpy, uint64_t dst_soc_addr, int buf_size, void *dma_handle );  
 typedef VASTStatus VastapiDmaReadBuf(VASTDisplay dpy, uint64_t src_soc_addr, int buf_size, void *dma_handle);
 typedef VASTStatus VastapiFilterParamParse(void * filt_params, const char * key,const char * value);
+typedef VASTStatus vastapiDeviceMemcpy(VASTDisplay dpy,uint32_t dev_id, const void *addr_from, size_t size, void *addr_to,int direction,void *dma_handle);
 
 //common tool api
 typedef void*      VastapiGetMemory(int len);
@@ -221,7 +223,8 @@ typedef struct VastapiFunctions{
     VastapiEnc1PassIssue            *vastapiEnc1PassIssue;
     VastapiEncGetEncoderOutput      *vastapiEncGetEncoderOutput;
     VastapiEncAllocOutputBuff       *vastapiEncAllocOutputBuff;
-
+    VastapiEncCalTimeStampPar       *vastapiEncCalTimeStampPar;
+    VastapiEncCalDurPar             *vastapiEncCalDurPar;
 
 
     VastapiHwPixFmtFromFourcc   *vastapiHwPixFmtFromFourcc;
@@ -277,7 +280,7 @@ typedef struct VastapiFunctions{
     VastapiDestroyDmaHandle      *vastapiDestroyDmaHandle;
     VastapiDmaWriteBuf           *vastapiDmaWriteBuf;
     VastapiDmaReadBuf            *vastapiDmaReadBuf;
-
+    vastapiDeviceMemcpy           *vastapiDeviceMemcpy;
     VastapiGetMemory             *vastapiGetMemory;
     VastapiFreeMemory            *vastapiFreeMemory;
 
@@ -327,7 +330,8 @@ static inline int vastapi_load_functions(VastapiFunctions **functions)
     LOAD_SYMBOL(vastapiEnc1PassIssue,           VastapiEnc1PassIssue, "vaenc_1pass_issue");
     LOAD_SYMBOL(vastapiEncGetEncoderOutput,     VastapiEncGetEncoderOutput, "vaenc_get_encode_output");
     LOAD_SYMBOL(vastapiEncAllocOutputBuff,      VastapiEncAllocOutputBuff, "vaenc_alloc_output_buffer");
-
+    LOAD_SYMBOL(vastapiEncCalTimeStampPar,      VastapiEncCalTimeStampPar, "vaenc_cal_timestamp_params");
+    LOAD_SYMBOL(vastapiEncCalDurPar,            VastapiEncCalDurPar, "vaenc_cal_duration_params");
 
 
     LOAD_SYMBOL(vastapiHwPixFmtFromFourcc,  VastapiHwPixFmtFromFourcc, "vastapi_pix_fmt_from_fourcc");
@@ -383,6 +387,7 @@ static inline int vastapi_load_functions(VastapiFunctions **functions)
     LOAD_SYMBOL(vastapiDestroyDmaHandle,  VastapiDestroyDmaHandle, "vastDestroyDmaHandle");
     LOAD_SYMBOL(vastapiDmaWriteBuf,       VastapiDmaWriteBuf, "vastDmaWriteBuf");
     LOAD_SYMBOL(vastapiDmaReadBuf,        VastapiDmaReadBuf, "vastDmaReadBuf");
+    LOAD_SYMBOL(vastapiDeviceMemcpy,        vastapiDeviceMemcpy, "vastDeviceMemcpy");
 
     LOAD_SYMBOL(vastapiGetMemory,         VastapiGetMemory, "vastapi_malloc_memory");
     LOAD_SYMBOL(vastapiFreeMemory,        VastapiFreeMemory, "vastapi_free_memory");

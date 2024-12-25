@@ -2842,6 +2842,24 @@ VASTStatus vastDmaReadBuf(
     void *dma_handle
 );
 
+VASTStatus vastDeviceMemcpy(VASTDisplay dpy,
+                            uint32_t dev_id, 
+                            const void *addr_from, 
+                            size_t size, 
+                            void *addr_to,
+                            int direction,
+                            void *dma_handle
+);
+
+
+VASTStatus vastQueWriteDmaBufSg(
+    VASTDisplay dpy,
+    void *channel,
+    int channel_num,
+    uint64_t axi_addr,
+    unsigned int die_index
+);
+
 
 #define DEFAULT_VAST -255
 #define MAX_TEMPORAL_LAYERS_VAST         4

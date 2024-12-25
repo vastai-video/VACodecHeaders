@@ -466,6 +466,7 @@ typedef struct VASTAPIEncodeContext {
     void (*av_packet_unref)(void *pkt);
     int (*update_av1_pkt)(void *ctx, void * avpkt);
     void (*ffmpeg_av_freep)(void *arg);
+    void (*ff_av_log)(void* avcl, int level, const char *fmt, ...);
     VASTAPIEncodeExtra      ff_param;
 
     void* vst_func;
@@ -685,6 +686,10 @@ typedef struct VASTAPISurfaceFormat_s {
 } VASTAPISurfaceFormat;
 
 typedef struct VASTAPIDeviceContext_s {
+    /**
+     * The public AVVAAPIDeviceContext. See hwcontext_vaapi.h for it.
+     */
+    AVVASTAPIDeviceContext p;
     // Surface formats which can be used with this device.
     VASTAPISurfaceFormat *formats;
     int                   nb_formats;
@@ -700,6 +705,11 @@ typedef struct VASTAPIFormatDescriptor_s {
 
 
 typedef struct VASTAPIFramesContext_s {
+    /**
+     * The public AVVAAPIFramesContext. See hwcontext_vaapi.h for it.
+     */
+    AVVASTAPIFramesContext p;
+
     VASTSurfaceAttrib *attributes;
     int                nb_attributes;
     unsigned int rt_format;
@@ -710,6 +720,7 @@ typedef struct VASTAPIFramesContext_s {
     int              init_dmabuffer_pool_size;
     int              number_dmabuffer;
     int              buffer_elem_size;
+    int              dma_hack_enable;
 } VASTAPIFramesContext;
 
 typedef struct VASTAPIMapping_s {

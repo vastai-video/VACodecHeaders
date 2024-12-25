@@ -1100,6 +1100,7 @@ typedef struct _VAEncMiscParameter
     int32_t bBPyramid; // 0: non-referece B Frames 1: reference B Frames
     int32_t sei_buf_count;
     VASTBufferID sei_buf_id[MAX_SEI_COUNT];
+    int32_t sei_buf_size[MAX_SEI_COUNT];
     int32_t llRc;
     int32_t ctbRc;
     int32_t gopChangeIdr;//for insertIDR
@@ -1114,6 +1115,8 @@ typedef struct _VAEncMiscParameter
     int32_t smartEnc;
     int32_t passmodel;
     int32_t qLevel;
+
+    int32_t lkLatency;
 } VAEncMiscParameter;
 
 #define VAST_INVALID_ID		0xffffffff
