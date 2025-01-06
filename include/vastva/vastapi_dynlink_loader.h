@@ -117,10 +117,15 @@ typedef int   VastapiEncIssuePrep(VASTAPIEncodeContext *ctx, VASTDisplay display
                                 void* opaque, int is_lt_n50, int frame_number, int width, int height);
 typedef int VastapiEncIssue(VASTAPIEncodeContext *ctx, VASTDisplay display, VASTAPIEncodePicture *pic,VaEncFrameSideData* sd_list, int nb_item, 
                               int width, int height, enum VaEncCodecID codec_id, int is_ge_n44, VASTAPIEncodeParam* params, int count);
+typedef int VastapiEncHeadIssue(VASTAPIEncodeContext *ctx, VASTDisplay display, VASTAPIEncodePicture *pic,VaEncFrameSideData* sd_list, int nb_item, 
+                              int width, int height, enum VaEncCodecID codec_id, int is_ge_n44, VASTAPIEncodeParam* params, int count);
+typedef int VastapiEncHeadOutput(VASTAPIEncodeContext *ctx,
+                               VASTAPIEncodePicture *pic, char *data, size_t *data_len);
 typedef int VastapiEncConfigCreate(VASTAPIEncodeContext *ctx, VASTDisplay display, int fr_num, int fr_den, int is_qsacle, int* avctx_profile);
 typedef int VastapiEncInitVastParam(VASTAPIEncodeContext *ctx, int is_range_jpeg, int is_av1, int is_10bit,
                                      int* avctx_gop_size, int* avctx_max_b_frames, int is_vui, int num, int den);
 typedef int VastapiEncFree(VASTAPIEncodeContext *avctx, VASTAPIEncodePicture *pic);
+typedef int VastapiEncFreeHead(VASTAPIEncodeContext *avctx, VASTAPIEncodePicture *pic);
 typedef int VastapiEncFlushEncoder(VASTAPIEncodeContext *ctx, void *pkt);
 typedef int VastapiEncCheckAV11Pass(VASTAPIEncodeContext *ctx, void *pkt);
 typedef int VastapiEnc2PassOnlyIssue(VASTAPIEncodeContext *ctx, VASTAPIEncodePicture *pic, void * pkt);
@@ -214,9 +219,12 @@ typedef struct VastapiFunctions{
     VastapiEncAV1InitSliceParam     *vastapiEncAV1InitSliceParam;
     VastapiEncIssuePrep             *vastapiEncIssuePrep;
     VastapiEncIssue                 *vastapiEncIssue;
+    VastapiEncHeadIssue             *vastapiEncHeadIssue;
+    VastapiEncHeadOutput            *vastapiEncHeadOutput;
     VastapiEncConfigCreate          *vastapiEncConfigCreate;
     VastapiEncInitVastParam         *vastapiEncInitVastParam;
     VastapiEncFree                  *vastapiEncFree;
+    VastapiEncFreeHead              *vastapiEncFreeHead;
     VastapiEncFlushEncoder          *vastapiEncFlushEncoder;
     VastapiEncCheckAV11Pass         *vastapiEncCheckAV11Pass;
     VastapiEnc2PassOnlyIssue        *vastapiEnc2PassOnlyIssue;
@@ -321,9 +329,12 @@ static inline int vastapi_load_functions(VastapiFunctions **functions)
     LOAD_SYMBOL(vastapiEncAV1InitSliceParam,    VastapiEncAV1InitSliceParam, "vaenc_av1_init_slice_params");
     LOAD_SYMBOL(vastapiEncIssuePrep,            VastapiEncIssuePrep, "vaenc_issue_prep");
     LOAD_SYMBOL(vastapiEncIssue,                VastapiEncIssue, "vaenc_issue");
+    LOAD_SYMBOL(vastapiEncHeadIssue,            VastapiEncHeadIssue, "vaenc_head_issue");
+    LOAD_SYMBOL(vastapiEncHeadOutput,           VastapiEncHeadOutput, "vaenc_head_output");
     LOAD_SYMBOL(vastapiEncConfigCreate,         VastapiEncConfigCreate, "vaenc_create_config");
     LOAD_SYMBOL(vastapiEncInitVastParam,        VastapiEncInitVastParam, "vastapi_encode_init_vast_params");
     LOAD_SYMBOL(vastapiEncFree,                 VastapiEncFree, "vastapi_encode_free");
+    LOAD_SYMBOL(vastapiEncFreeHead,             VastapiEncFreeHead, "vastapi_encode_free_head");
     LOAD_SYMBOL(vastapiEncFlushEncoder,         VastapiEncFlushEncoder, "vaenc_flush_encoder");
     LOAD_SYMBOL(vastapiEncCheckAV11Pass,        VastapiEncCheckAV11Pass, "vaenc_check_av1_1pass");
     LOAD_SYMBOL(vastapiEnc2PassOnlyIssue,       VastapiEnc2PassOnlyIssue, "vaenc_2passonly_issue");

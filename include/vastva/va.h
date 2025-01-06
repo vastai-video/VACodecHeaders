@@ -2484,6 +2484,8 @@ VASTStatus vastRenderPicture (
  */
 VASTStatus vastEndPicture (VASTDisplay dpy, VASTContextID context);
 
+VASTStatus vastEncodeHead (VASTDisplay dpy, VASTContextID context);
+
 VASTStatus vastSyncSurfaceFlush (VASTDisplay dpy, VASTSurfaceID render_target);
 
 /**
