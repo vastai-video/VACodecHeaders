@@ -19,7 +19,7 @@
 #define CUTREE_BUFFER_CNT(depth, gopSize)                                                                              \
     ((gopSize) <= MAX_ADAPTIVE_GOP_SIZE ? ((depth) + MAX_ADAPTIVE_GOP_SIZE - 1) : ((depth) + MAX_GOP_SIZE / 2))
 #define MAX_GOP_SIZE 16
-
+#define RESERVED_SIZE 2048
 enum {
     MAX_CONFIG_ATTRIBUTES  = 5,
     MAX_GLOBAL_PARAMS      = 5,
@@ -175,7 +175,9 @@ typedef struct VASTAPIEncodePicture {
     int                 do1pass;
     int                 should_do_2pass;
     int64_t             pts_internal;
+    int64_t             dts_internal;
     int                 ctnIgop;
+    void *reserved;
 } VASTAPIEncodePicture;
 
 
@@ -434,6 +436,7 @@ typedef struct VASTAPIEncodeContext {
     int                     first_i_ready;
     int                     dts_index; // new dst simonz
     int64_t                 pts_internal;
+    int64_t                 dts_internal;    
     int                     flush_pkt_flag;
     int                     lookaheadPacket_size;
     struct queue            encodePktQ;
@@ -467,11 +470,31 @@ typedef struct VASTAPIEncodeContext {
     int (*update_av1_pkt)(void *ctx, void * avpkt);
     void (*ffmpeg_av_freep)(void *arg);
     void (*ff_av_log)(void* avcl, int level, const char *fmt, ...);
+    void (*ff_cmd_api)(int cmd, void *args);
     VASTAPIEncodeExtra      ff_param;
-
     void* vst_func;
+    void *reserved;
 } VASTAPIEncodeContext;
 
+typedef struct VASTAPIEncodeQualityMetrics{
+    uint32_t u32ReversedType;
+    double  mse[4];
+    double  psnr[4];
+    double  ssim[4];
+    int64_t display_order;
+    int64_t encode_order;
+    void    *opaque;
+    void    *opaque_ref;
+}VASTAPIEncodeQualityMetrics;
+
+typedef struct VASTAPIEncodeOutInfo{
+    union 
+    {
+        uint32_t u32ReversedType;
+        VASTAPIEncodeQualityMetrics metrics_info;
+        char reserved[RESERVED_SIZE];
+    };
+}VASTAPIEncodeOutInfo;
 
 typedef struct VASTAPIEncodeH264Picture {
     int frame_num;
@@ -756,6 +779,18 @@ typedef struct VASTAPIContext_s{
 
 }VASTAPIContext;
 
+enum VaencCmdType{
+    VAENC_CMDTYPE_PSNR,
+    VAENC_CMDTYPE_TOTAL,
+};
+
+typedef struct VASTAPIPsnrCmd{
+    VASTAPIEncodeContext *ctx;
+    VASTDisplay display;
+    int64_t display_order;
+    int64_t encode_order;
+    int flush_lookahead;
+}VASTAPIPsnrCmd;
 #endif // __HWCTX_VASTAPI_API_H__
 
 #ifndef VAFILTER_API_H
