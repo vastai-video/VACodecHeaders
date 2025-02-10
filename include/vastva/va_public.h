@@ -612,6 +612,7 @@ typedef struct _VASTEncMiscParameterRateControl
     /** \brief Reserved bytes for future use, must be zero */
     uint32_t max_qp;
     uint32_t va_reserved[VAST_PADDING_MEDIUM - 2];
+    char reserved[1024];
 } VASTEncMiscParameterRateControl;
 
 
@@ -999,6 +1000,11 @@ typedef struct _VAEncMiscParameter
         unsigned int interlacedFrame;
         unsigned int codedChromaIdc;
         unsigned int scaledOutputFormat;
+        unsigned int inputFrameCropFlag;
+        unsigned int inputFrameCropTop;
+        unsigned int inputFrameCropBottom;
+        unsigned int inputFrameCropLeft;
+        unsigned int inputFrameCropRight;        
     } preprocess;
     /**packed header output control**/
     struct {
@@ -1117,6 +1123,7 @@ typedef struct _VAEncMiscParameter
     int32_t qLevel;
 
     int32_t lkLatency;
+    char reserved[1024];
 } VAEncMiscParameter;
 
 #define VAST_INVALID_ID		0xffffffff

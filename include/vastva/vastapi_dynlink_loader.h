@@ -62,8 +62,6 @@
     do {                                                           \
         if (!((f->fun) = (tp*)VASTAPI_SYM_FUNC(f->lib, symbol))) { \
             VASTAPI_LOG_FUNC("Cannot load %s\n", symbol);          \
-            ret = -1;                                              \
-            goto error;                                            \
         }                                                          \
         VASTAPI_LOG_FUNC("Loaded sym: %s\n", symbol);              \
     } while (0)
@@ -202,9 +200,10 @@ typedef VASTStatus VastapiDeriveImage (VASTDisplay dpy, VASTSurfaceID surface, V
 typedef VASTStatus VastapiDestroyDmaHandle(VASTDisplay dpy, void *dma_handle);  
 typedef VASTStatus VastapiDmaWriteBuf(VASTDisplay dpy, uint64_t dst_soc_addr, int buf_size, void *dma_handle );  
 typedef VASTStatus VastapiDmaReadBuf(VASTDisplay dpy, uint64_t src_soc_addr, int buf_size, void *dma_handle);
+typedef void       VastapiFilterParamInit(void * filt_params);
 typedef VASTStatus VastapiFilterParamParse(void * filt_params, const char * key,const char * value);
 typedef VASTStatus vastapiDeviceMemcpy(VASTDisplay dpy,uint32_t dev_id, const void *addr_from, size_t size, void *addr_to,int direction,void *dma_handle);
-
+typedef VASTStatus VastapiGetDieinfo(VASTDisplay dpy,int* die_id);
 //common tool api
 typedef void*      VastapiGetMemory(int len);
 typedef void       VastapiFreeMemory(void *ptr);
@@ -291,7 +290,7 @@ typedef struct VastapiFunctions{
     vastapiDeviceMemcpy           *vastapiDeviceMemcpy;
     VastapiGetMemory             *vastapiGetMemory;
     VastapiFreeMemory            *vastapiFreeMemory;
-
+  
     VASTAPI_LIB_HANDLE           lib;
 
 }VastapiFunctions;
@@ -299,7 +298,10 @@ typedef struct VastapiFunctions{
 typedef struct VastapiFunctionsNoDev{
 
     VastapiPresetLoadBL      *vastapiPresetLoadBL;
+    VastapiFilterParamInit   *vastapiFilterParamInit;
     VastapiFilterParamParse  *vastapiFilterParamParse;
+    VastapiGetDieinfo        *vastapiGetDieinfo;
+    VastapiHwSurfaceAddr     *vastapiHwSurfaceAddr;
     VastapiGetMemory         *vastapiGetMemory;
     VastapiFreeMemory        *vastapiFreeMemory;
 
@@ -418,10 +420,12 @@ static inline int vastapi_nodev_load_functions(VastapiFunctionsNoDev **functions
     GENERIC_LOAD_FUNC_PREAMBLE(VastapiFunctionsNoDev, vastapi_nodev, VASTAPI_ENC_LIBNAME);
 
     LOAD_SYMBOL(vastapiPresetLoadBL,       VastapiPresetLoadBL, "vastapi_preset_loadbalance");
+    LOAD_SYMBOL(vastapiFilterParamInit,    VastapiFilterParamInit, "vastFilterParamInit");
     LOAD_SYMBOL(vastapiFilterParamParse,   VastapiFilterParamParse, "vastFilterParamParse");
-
+    LOAD_SYMBOL(vastapiHwSurfaceAddr,      VastapiHwSurfaceAddr, "vastapi_surface_address");
     LOAD_SYMBOL(vastapiGetMemory,          VastapiGetMemory, "vastapi_malloc_memory");
     LOAD_SYMBOL(vastapiFreeMemory,         VastapiFreeMemory, "vastapi_free_memory");
+    LOAD_SYMBOL(vastapiGetDieinfo,         VastapiGetDieinfo, "vastGetDieinfo");
 
     GENERIC_LOAD_FUNC_FINALE(vastapi_nodev);
 }

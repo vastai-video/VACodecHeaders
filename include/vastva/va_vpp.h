@@ -262,6 +262,7 @@ typedef enum _VASTProcFilterType {
     VASTProcFilterHQDN3D,
     VASTProcFilterFlip,
     VASTProcFilterTranspose,
+    VASTProcFilterCas,
     /** \brief Number of video filters. */
     VASTProcFilterCount
 } VASTProcFilterType;
@@ -703,6 +704,8 @@ typedef struct{
     float luma_temporal;
     float chroma_temporal;
     int direction;
+    float strength;
+    int planes;
     int vapp_enable;
 }FilterParams;
 //bayer_convert
