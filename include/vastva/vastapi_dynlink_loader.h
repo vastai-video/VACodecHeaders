@@ -44,14 +44,31 @@
 
 #if !defined(VASTAPI_LOG_FUNC)
 # include <stdio.h>
-//#define VASTAPI_LOG_FUNC(msg, ...) fprintf(stderr, (msg), __VA_ARGS__)
+#define VASTAPI_LOG_FUNC_ERR(msg, ...) fprintf(stderr, (msg), __VA_ARGS__)
+#define VASTAPI_LOG_FUNC
+#endif
+
+
+#if defined(ANDROID) || defined(ANDROID_32BIT)
+#include <android/log.h>
+
+#define VASTAI_LOG_TAG "va_video"
+#define ALOGV(...) __android_log_print(ANDROID_LOG_VERBOSE, VASTAI_LOG_TAG, __VA_ARGS__)
+#define ALOGD(...) __android_log_print(ANDROID_LOG_DEBUG, VASTAI_LOG_TAG, __VA_ARGS__)
+#define ALOGI(...) __android_log_print(ANDROID_LOG_INFO, VASTAI_LOG_TAG, __VA_ARGS__)
+#define ALOGW(...) __android_log_print(ANDROID_LOG_WARN, VASTAI_LOG_TAG, __VA_ARGS__)
+#define ALOGE(...) __android_log_print(ANDROID_LOG_ERROR, VASTAI_LOG_TAG, __VA_ARGS__)
+
+#define printf(...) __android_log_print(ANDROID_LOG_INFO, VASTAI_LOG_TAG, __VA_ARGS__)
+
+#define VASTAPI_LOG_FUNC_ERR(...) __android_log_print(ANDROID_LOG_ERROR, VASTAI_LOG_TAG, __VA_ARGS__)
 #define VASTAPI_LOG_FUNC
 #endif
 
 #define LOAD_LIBRARY(l, path)                          \
     do {                                               \
         if (!((l) = VASTAPI_LOAD_FUNC(path))) {        \
-            VASTAPI_LOG_FUNC("Cannot load %s\n", path);\
+            VASTAPI_LOG_FUNC_ERR("Cannot load %s\n", path);\
             ret = -1;                                  \
             goto error;                                \
         }                                              \
@@ -61,7 +78,7 @@
 #define LOAD_SYMBOL(fun, tp, symbol)                               \
     do {                                                           \
         if (!((f->fun) = (tp*)VASTAPI_SYM_FUNC(f->lib, symbol))) { \
-            VASTAPI_LOG_FUNC("Cannot load %s\n", symbol);          \
+            VASTAPI_LOG_FUNC_ERR("Cannot load %s\n", symbol);          \
         }                                                          \
         VASTAPI_LOG_FUNC("Loaded sym: %s\n", symbol);              \
     } while (0)
@@ -69,7 +86,7 @@
 #define LOAD_SYMBOL_OPT(fun, tp, symbol)                           \
     do {                                                           \
         if (!((f->fun) = (tp*)VASTAPI_SYM_FUNC(f->lib, symbol))) { \
-            VASTAPI_LOG_FUNC("Cannot load optional %s\n", symbol); \
+            VASTAPI_LOG_FUNC_ERR("Cannot load optional %s\n", symbol); \
         } else {                                                   \
             VASTAPI_LOG_FUNC("Loaded sym: %s\n", symbol);          \
         }                                                          \
@@ -148,6 +165,7 @@ typedef void  VastapiHwUnmapFrame(VASTAPIContext *vstCtx, void* data, int width,
 typedef int   VastapiHwMapFrame(VASTAPIContext *vstCtx, VAST_PIX_FTM dstFtm, int width, int height, int flags);
 typedef int   VastapiHwGetConstraints(VASTAPIContext *vstCtx, VastapiConstraint *constraints, VASTSurfaceAttrib **attr_list);
 typedef int   VastapiHwSurfaceAddr(AVVASTAPIDeviceContext *hwctx, uint8_t *data, uint64_t *frame_addr, int isGetAddress);
+typedef int   VastapiHwSurfaceAddrFromFd(AVVASTAPIDeviceContext *hwctx, uint8_t *data, int dmabuf_fd);
 typedef int   VastapiHwTransferData(VASTAPIContext *vstCtx, uint64_t dma_addr, int dma_size, uint8_t *data, int fd, int src_type, int isHostToHw);
 typedef int   VastapiHwFrameInit(VASTAPIContext *vstCtx, VAST_PIX_FTM pix_fmt, int pool_size, int frame_flags);
 typedef int   VastapiHwTestDeriveWork(VASTAPIContext *vstCtx, VAST_PIX_FTM pix_fmt, uint8_t *data);
@@ -246,6 +264,7 @@ typedef struct VastapiFunctions{
     VastapiHwMapFrame           *vastapiHwMapFrame;
     VastapiHwGetConstraints     *vastapiHwGetConstraints;
     VastapiHwSurfaceAddr        *vastapiHwSurfaceAddr;
+    VastapiHwSurfaceAddrFromFd  *vastapiHwSurfaceAddrFromFd;
     VastapiHwTransferData       *vastapiHwTransferData;
     VastapiHwFrameInit          *vastapiHwFrameInit;
     VastapiHwTestDeriveWork     *vastapiHwTestDeriveWork;
@@ -308,7 +327,26 @@ typedef struct VastapiFunctionsNoDev{
     VASTAPI_LIB_HANDLE           lib;
 }VastapiFunctionsNoDev;
 
-
+static char* vastai_get_library_name()
+{
+    static char lib_name[512] = {0};
+    char *libva_path = NULL;
+    char *libva_name = NULL;
+#ifdef _WIN32
+    return VASTAPI_ENC_LIBNAME;
+#else
+    libva_path = getenv("LIBVASTVA_DRIVERS_PATH");
+    libva_name = getenv("LIBVASTVA_DRIVER_NAME");
+    if(!libva_name)
+        libva_name = "vastai";
+    if(libva_path){
+        snprintf(lib_name, 512, "%s/%s_drv_video.so", libva_path, libva_name);
+    }else{
+        snprintf(lib_name, 512, "%s_drv_video.so", libva_name);
+    }
+    return lib_name;
+#endif
+}
 
 static inline void vastapi_free_functions(VastapiFunctions **functions)
 {
@@ -319,7 +357,7 @@ static inline void vastapi_free_functions(VastapiFunctions **functions)
 static inline int vastapi_load_functions(VastapiFunctions **functions)
 {
 
-    GENERIC_LOAD_FUNC_PREAMBLE(VastapiFunctions, vastapi, VASTAPI_ENC_LIBNAME);
+    GENERIC_LOAD_FUNC_PREAMBLE(VastapiFunctions, vastapi, vastai_get_library_name());
 
 
     LOAD_SYMBOL(vastapiEncAllowOptimizeDelay,   VastapiEncAllowOptimizeDelay, "allow_optimize_delay");
@@ -359,6 +397,7 @@ static inline int vastapi_load_functions(VastapiFunctions **functions)
     LOAD_SYMBOL(vastapiHwMapFrame,  VastapiHwMapFrame, "vastapi_map_frame_private");
     LOAD_SYMBOL(vastapiHwGetConstraints,  VastapiHwGetConstraints, "vastapi_get_constraints");
     LOAD_SYMBOL(vastapiHwSurfaceAddr,  VastapiHwSurfaceAddr, "vastapi_surface_address");
+    LOAD_SYMBOL(vastapiHwSurfaceAddrFromFd,  VastapiHwSurfaceAddrFromFd, "vastapi_surface_address_from_fd");
     LOAD_SYMBOL(vastapiHwTransferData,  VastapiHwTransferData, "vastapi_transfer_data");
     LOAD_SYMBOL(vastapiHwFrameInit,  VastapiHwFrameInit, "vastapi_frames_init_private");
     LOAD_SYMBOL(vastapiHwTestDeriveWork,  VastapiHwTestDeriveWork, "vastapi_test_derive_work");
@@ -417,7 +456,7 @@ static inline void vastapi_nodev_free_functions(VastapiFunctionsNoDev **function
 static inline int vastapi_nodev_load_functions(VastapiFunctionsNoDev **functions)
 {
 
-    GENERIC_LOAD_FUNC_PREAMBLE(VastapiFunctionsNoDev, vastapi_nodev, VASTAPI_ENC_LIBNAME);
+    GENERIC_LOAD_FUNC_PREAMBLE(VastapiFunctionsNoDev, vastapi_nodev, vastai_get_library_name());
 
     LOAD_SYMBOL(vastapiPresetLoadBL,       VastapiPresetLoadBL, "vastapi_preset_loadbalance");
     LOAD_SYMBOL(vastapiFilterParamInit,    VastapiFilterParamInit, "vastFilterParamInit");
